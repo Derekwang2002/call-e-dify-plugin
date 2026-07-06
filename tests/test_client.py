@@ -1,6 +1,8 @@
 import pytest
 
+from utils import client
 from utils.client import (
+    CalleClient,
     build_create_payload,
     mask_phone,
     normalize_base_url,
@@ -46,3 +48,23 @@ def test_build_create_payload_adds_source_metadata():
     assert payload["recipients"][0]["phones"] == ["+15555550123"]
     assert payload["metadata"]["lead_id"] == "lead_1"
     assert payload["metadata"]["source"] == "dify_call_e_plugin"
+
+
+def test_health_accepts_text_ok_response(monkeypatch):
+    class Response:
+        status_code = 200
+        text = "OK"
+
+    def fake_request(method, url, headers, timeout, **kwargs):
+        assert method == "GET"
+        assert url == "https://api.example.com/health"
+        assert headers["Authorization"] == "Bearer test_key"
+        assert timeout == 10
+        assert kwargs.get("json") is None
+        return Response()
+
+    monkeypatch.setattr(client.requests, "request", fake_request)
+
+    assert CalleClient(api_key="test_key", base_url="https://api.example.com").health() == {
+        "status": "OK"
+    }

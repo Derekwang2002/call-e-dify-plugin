@@ -27,7 +27,7 @@ Configure these provider credentials in Dify:
 | `api_key` | Yes | CALL-E API key. Stored as a secret input in Dify. |
 | `base_url` | Yes | CALL-E API base URL. Defaults to `https://api.heycall-e.com`. Do not include `/v1`. |
 
-The provider validates credentials by calling `GET /health` on the configured CALL-E API host.
+The provider checks that the API key is present and that the configured CALL-E API host is reachable by calling `GET /health`.
 
 ## Tools
 
@@ -94,7 +94,7 @@ The package command creates a `.difypkg` file that can be uploaded to Dify or at
 
 ## Release
 
-1. Update `version` in `manifest.yaml`.
+1. Update `version` in `manifest.yaml` and `pyproject.toml`.
 2. Run tests and compile checks.
 3. Package with `dify plugin package ./call-e-dify-plugin`.
 4. Create a GitHub Release.

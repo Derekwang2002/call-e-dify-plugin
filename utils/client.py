@@ -273,7 +273,31 @@ class CalleClient:
         return payload if isinstance(payload, dict) else {"data": payload}
 
     def health(self) -> dict[str, Any]:
-        return self._request("GET", "/health", timeout=10)
+        url = f"{self.base_url}/health"
+        try:
+            response = requests.request(
+                "GET",
+                url,
+                headers=self._headers(),
+                timeout=10,
+            )
+        except requests.RequestException as error:
+            raise CalleApiError(f"CALL-E health check failed: {error}") from error
+
+        if response.status_code < 200 or response.status_code >= 300:
+            raise CalleApiError(
+                f"CALL-E health check failed: HTTP {response.status_code}: {response.text[:1000]}"
+            )
+
+        if not response.text:
+            return {}
+
+        try:
+            payload = response.json()
+        except (AttributeError, ValueError):
+            return {"status": response.text.strip()}
+
+        return payload if isinstance(payload, dict) else {"data": payload}
 
     def create_call(self, payload: dict[str, Any], *, idempotency_key: str | None = None) -> dict[str, Any]:
         url = f"{self.base_url}/v1/calls"
