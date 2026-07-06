@@ -1,0 +1,39 @@
+identity:
+  name: get_call
+  author: Derekwang2002
+  label:
+    en_US: Get CALL-E Call
+description:
+  human:
+    en_US: Fetch one CALL-E call by call ID.
+  llm: Fetch one CALL-E call by call ID and return parsed status, summary, transcript, metadata, and redacted raw result fields.
+parameters:
+  - name: call_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Call ID
+    human_description:
+      en_US: CALL-E call ID returned by create_call or create_and_wait.
+    llm_description: CALL-E call ID returned by create_call or create_and_wait.
+extra:
+  python:
+    source: tools/get_call.py
+output_schema:
+  type: object
+  properties:
+    call_id:
+      type: string
+    call_status:
+      type: string
+    recipient_status:
+      type: string
+    latest_attempt_status:
+      type: string
+    summary:
+      type: string
+    transcript:
+      type: array
+    structured_result:
+      type: object
