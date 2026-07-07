@@ -27,7 +27,7 @@ Configure these provider credentials in Dify:
 | `api_key` | Yes | CALL-E API key. Stored as a secret input in Dify. |
 | `base_url` | Yes | CALL-E API base URL. Defaults to `https://api.heycall-e.com`. Do not include `/v1`. |
 
-The provider checks that the API key is present and that the configured CALL-E API host is reachable by calling `GET /health`.
+The provider checks that the API key is present and that `base_url` is an HTTP(S) URL. Network and API errors are reported by the tool calls themselves.
 
 ## Tools
 
