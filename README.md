@@ -2,6 +2,8 @@
 
 CALL-E tools for Dify workflows and agents.
 
+Source repository: https://github.com/Derekwang2002/call-e-dify-plugin
+
 This plugin exposes safe one-shot phone-call tools for CALL-E:
 
 - `create_call` previews or creates one outbound CALL-E call.

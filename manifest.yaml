@@ -1,4 +1,4 @@
-version: 0.1.3
+version: 0.1.4
 type: plugin
 author: derekwang2002
 name: call_e
@@ -29,3 +29,4 @@ meta:
 tags:
   - productivity
   - utilities
+privacy: ./PRIVACY.md

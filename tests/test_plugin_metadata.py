@@ -22,3 +22,17 @@ def test_plugin_author_is_lowercase_and_consistent():
     for tool_path in tool_paths:
         tool = load_yaml(tool_path)
         assert tool["identity"]["author"] == author
+
+
+def test_manifest_declares_packaged_privacy_policy():
+    manifest = load_yaml("manifest.yaml")
+    privacy_path = manifest["privacy"]
+
+    assert privacy_path == "./PRIVACY.md"
+    assert (ROOT / privacy_path.removeprefix("./")).is_file()
+
+
+def test_readme_links_source_repository():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "https://github.com/Derekwang2002/call-e-dify-plugin" in readme
