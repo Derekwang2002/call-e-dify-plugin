@@ -27,7 +27,13 @@ Configure these provider credentials in Dify:
 | `api_key` | Yes | CALL-E API key. Stored as a secret input in Dify. |
 | `base_url` | Yes | CALL-E API base URL. Defaults to `https://api.heycall-e.com`. Do not include `/v1`. |
 
-The provider checks that the API key is present and that `base_url` is an HTTP(S) URL. Network and API errors are reported by the tool calls themselves.
+When credentials are saved, the provider performs a non-mutating authentication probe:
+
+```text
+GET /v1/calls/call_dify_credential_probe_00000000000000000000000000000000
+```
+
+The CALL-E API documents `GET /v1/calls/{call_id}` and the stable error code `not_found`. A documented `404 not_found` response means the API key was accepted and the probe call ID does not exist, so no call is created. `401 unauthorized` and `403 forbidden` are reported as credential configuration errors.
 
 ## Tools
 

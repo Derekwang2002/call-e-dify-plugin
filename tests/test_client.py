@@ -3,12 +3,16 @@ import pytest
 from utils import client
 from utils.client import (
     CalleClient,
+    CalleApiError,
     build_create_payload,
     mask_phone,
     normalize_base_url,
     parse_json_object,
     validate_e164,
 )
+
+
+EXPECTED_CREDENTIAL_PROBE_CALL_ID = "call_dify_credential_probe_00000000000000000000000000000000"
 
 
 def test_normalize_base_url_strips_v1_suffix():
@@ -68,3 +72,64 @@ def test_health_accepts_text_ok_response(monkeypatch):
     assert CalleClient(api_key="test_key", base_url="https://api.example.com").health() == {
         "status": "OK"
     }
+
+
+def test_validate_credentials_accepts_documented_not_found_probe(monkeypatch):
+    class Response:
+        status_code = 404
+        text = '{"error":{"code":"not_found","message":"Call task not found.","details":{}}}'
+
+        def json(self):
+            return {"error": {"code": "not_found", "message": "Call task not found.", "details": {}}}
+
+    calls = []
+
+    def fake_request(method, url, headers, timeout, **kwargs):
+        calls.append((method, url, headers, timeout, kwargs))
+        return Response()
+
+    monkeypatch.setattr(client.requests, "request", fake_request)
+
+    result = CalleClient(api_key="test_key", base_url="https://api.example.com").validate_credentials()
+
+    assert result == {
+        "authenticated": True,
+        "probe_call_id": EXPECTED_CREDENTIAL_PROBE_CALL_ID,
+        "probe_status_code": 404,
+    }
+    assert calls == [
+        (
+            "GET",
+            f"https://api.example.com/v1/calls/{EXPECTED_CREDENTIAL_PROBE_CALL_ID}",
+            {
+                "Accept": "application/json",
+                "Authorization": "Bearer test_key",
+                "Content-Type": "application/json",
+            },
+            10,
+            {},
+        )
+    ]
+
+
+def test_validate_credentials_rejects_unauthorized_probe(monkeypatch):
+    class Response:
+        status_code = 401
+        text = '{"error":{"code":"unauthorized","message":"Invalid or missing API key.","details":{}}}'
+
+        def json(self):
+            return {
+                "error": {
+                    "code": "unauthorized",
+                    "message": "Invalid or missing API key.",
+                    "details": {},
+                }
+            }
+
+    def fake_request(method, url, headers, timeout, **kwargs):
+        return Response()
+
+    monkeypatch.setattr(client.requests, "request", fake_request)
+
+    with pytest.raises(CalleApiError, match="CALL-E API key is invalid or missing"):
+        CalleClient(api_key="bad_key", base_url="https://api.example.com").validate_credentials()

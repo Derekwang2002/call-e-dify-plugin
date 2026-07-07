@@ -10,6 +10,7 @@ import requests
 
 
 DEFAULT_BASE_URL = "https://api.heycall-e.com"
+CREDENTIAL_PROBE_CALL_ID = "call_dify_credential_probe_00000000000000000000000000000000"
 E164_RE = re.compile(r"^\+[1-9]\d{7,14}$")
 PLACEHOLDER_PHONES = {"+15555550101", "+15555550102", "+14155550123"}
 TERMINAL_STATUSES = {
@@ -26,7 +27,18 @@ TERMINAL_STATUSES = {
 
 
 class CalleApiError(Exception):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        error_code: str | None = None,
+        response_text: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.error_code = error_code
+        self.response_text = response_text
 
 
 def normalize_base_url(value: Any) -> str:
@@ -105,6 +117,41 @@ def as_list(value: Any) -> list[Any]:
 
 def as_object(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
+
+
+def _response_json(response: requests.Response) -> dict[str, Any]:
+    try:
+        payload = response.json()
+    except ValueError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _error_code_and_message(response: requests.Response) -> tuple[str, str]:
+    payload = _response_json(response)
+    error = as_object(payload.get("error"))
+    code = str(error.get("code") or "").strip()
+    message = str(error.get("message") or "").strip()
+    return code, message
+
+
+def _api_error(prefix: str, response: requests.Response) -> CalleApiError:
+    code, message = _error_code_and_message(response)
+    status = getattr(response, "status_code", None)
+    text = str(getattr(response, "text", ""))[:1000]
+    parts = [f"{prefix}: HTTP {status}"]
+    if code:
+        parts.append(code)
+    if message:
+        parts.append(message)
+    elif text:
+        parts.append(text)
+    return CalleApiError(
+        ": ".join(parts),
+        status_code=status,
+        error_code=code or None,
+        response_text=text,
+    )
 
 
 def latest(values: list[Any]) -> Any:
@@ -261,8 +308,7 @@ class CalleClient:
             raise CalleApiError(f"CALL-E API request failed: {error}") from error
 
         if response.status_code < 200 or response.status_code >= 300:
-            text = response.text[:1000]
-            raise CalleApiError(f"CALL-E API request failed: HTTP {response.status_code}: {text}")
+            raise _api_error("CALL-E API request failed", response)
 
         if not response.text:
             return {}
@@ -271,6 +317,51 @@ class CalleClient:
         except ValueError as error:
             raise CalleApiError("CALL-E API returned non-JSON response.") from error
         return payload if isinstance(payload, dict) else {"data": payload}
+
+    def validate_credentials(self) -> dict[str, Any]:
+        url = f"{self.base_url}/v1/calls/{CREDENTIAL_PROBE_CALL_ID}"
+        try:
+            response = requests.request(
+                "GET",
+                url,
+                headers=self._headers(),
+                timeout=10,
+            )
+        except requests.RequestException as error:
+            raise CalleApiError(f"Unable to reach CALL-E API while validating credentials: {error}") from error
+
+        if response.status_code == 200:
+            return {
+                "authenticated": True,
+                "probe_call_id": CREDENTIAL_PROBE_CALL_ID,
+                "probe_status_code": response.status_code,
+            }
+
+        code, _message = _error_code_and_message(response)
+        if response.status_code == 404 and code == "not_found":
+            return {
+                "authenticated": True,
+                "probe_call_id": CREDENTIAL_PROBE_CALL_ID,
+                "probe_status_code": response.status_code,
+            }
+
+        if response.status_code == 401 or code == "unauthorized":
+            raise CalleApiError(
+                "CALL-E API key is invalid or missing.",
+                status_code=response.status_code,
+                error_code=code or "unauthorized",
+                response_text=response.text[:1000],
+            )
+
+        if response.status_code == 403 or code == "forbidden":
+            raise CalleApiError(
+                "CALL-E API key is valid but does not have access to this project or operation.",
+                status_code=response.status_code,
+                error_code=code or "forbidden",
+                response_text=response.text[:1000],
+            )
+
+        raise _api_error("CALL-E credential validation failed", response)
 
     def health(self) -> dict[str, Any]:
         url = f"{self.base_url}/health"

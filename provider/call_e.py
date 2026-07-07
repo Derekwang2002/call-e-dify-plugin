@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 from dify_plugin import ToolProvider
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
-from utils.client import normalize_base_url
+from utils.client import CalleApiError, CalleClient, normalize_base_url
 
 
 class CallEProvider(ToolProvider):
@@ -20,3 +20,8 @@ class CallEProvider(ToolProvider):
             raise ToolProviderCredentialValidationError(
                 "CALL-E API base URL must be an HTTP(S) URL."
             )
+
+        try:
+            CalleClient(api_key=api_key, base_url=base_url).validate_credentials()
+        except CalleApiError as error:
+            raise ToolProviderCredentialValidationError(str(error)) from error
