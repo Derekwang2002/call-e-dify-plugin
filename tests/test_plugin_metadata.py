@@ -36,3 +36,10 @@ def test_readme_links_source_repository():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "https://github.com/Derekwang2002/call-e-dify-plugin" in readme
+
+
+def test_marketplace_runtime_dependencies_are_declared():
+    requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
+
+    assert "dify_plugin>=0.9.0" in requirements
+    assert "requests>=2.32.0" in requirements

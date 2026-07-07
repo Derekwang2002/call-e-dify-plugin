@@ -3,8 +3,14 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+.DS_Store
 .env
 *.difypkg
 .git/
+.gitignore
+.difyignore
+*.egg-info/
+pyproject.toml
+uv.lock
 tests/
 .github/

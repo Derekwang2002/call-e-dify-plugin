@@ -1,12 +1,12 @@
 [project]
 name = "call-e-dify-plugin"
-version = "0.1.4"
+version = "0.1.5"
 description = "CALL-E tools for Dify workflows and agents"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "dify_plugin>=0.9.0",
-    "requests>=2.32.0",
+    "dify_plugin>=0.9.0,<1.0.0",
+    "requests>=2.32.0,<3.0.0",
 ]
 
 [project.optional-dependencies]
