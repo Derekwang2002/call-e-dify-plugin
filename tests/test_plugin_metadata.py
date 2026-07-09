@@ -35,7 +35,7 @@ def test_manifest_declares_packaged_privacy_policy():
 def test_readme_links_source_repository():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert "https://github.com/CALLE-AI/call-e-dify-plugin" in readme
+    assert "https://github.com/call-e/call-e-dify-plugin" in readme
 
 
 def test_marketplace_runtime_dependencies_are_declared():
